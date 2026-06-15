@@ -1,4 +1,5 @@
 'use client'
+
 import { useEffect, useRef } from 'react'
 
 interface Star {
@@ -7,11 +8,13 @@ interface Star {
   size: number
   opacity: number
   speed: number
-  twinkleOffset: number
+  twinklePhase: number
 }
 
 export default function StarBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const starsRef = useRef<Star[]>([])
+  const animRef = useRef<number>(0)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -19,45 +22,46 @@ export default function StarBackground() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    let animFrame: number
-    const stars: Star[] = []
-
     const resize = () => {
       canvas.width = window.innerWidth
       canvas.height = window.innerHeight
+      initStars()
     }
-    resize()
-    window.addEventListener('resize', resize)
 
-    for (let i = 0; i < 200; i++) {
-      stars.push({
+    const initStars = () => {
+      starsRef.current = Array.from({ length: 150 }, () => ({
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
         size: Math.random() * 1.5 + 0.3,
-        opacity: Math.random() * 0.7 + 0.2,
-        speed: Math.random() * 0.5 + 0.1,
-        twinkleOffset: Math.random() * Math.PI * 2,
-      })
+        opacity: Math.random() * 0.6 + 0.2,
+        speed: Math.random() * 0.3 + 0.1,
+        twinklePhase: Math.random() * Math.PI * 2,
+      }))
     }
 
-    let t = 0
-    const draw = () => {
+    const draw = (_time: number) => {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
-      t += 0.008
-      stars.forEach(star => {
-        const twinkle = Math.sin(t * star.speed + star.twinkleOffset) * 0.3 + 0.7
+
+      starsRef.current.forEach(star => {
+        star.twinklePhase += star.speed * 0.02
+        const opacity = star.opacity * (0.5 + 0.5 * Math.sin(star.twinklePhase))
+
         ctx.beginPath()
         ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(255, 255, 255, ${star.opacity * twinkle})`
+        ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`
         ctx.fill()
       })
-      animFrame = requestAnimationFrame(draw)
+
+      animRef.current = requestAnimationFrame(draw)
     }
-    draw()
+
+    resize()
+    window.addEventListener('resize', resize)
+    animRef.current = requestAnimationFrame(draw)
 
     return () => {
-      cancelAnimationFrame(animFrame)
       window.removeEventListener('resize', resize)
+      cancelAnimationFrame(animRef.current)
     }
   }, [])
 

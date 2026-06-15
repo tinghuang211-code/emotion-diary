@@ -1,8 +1,11 @@
-export interface Profile {
-  id: string
-  username: string | null
-  avatar_url: string | null
-  created_at: string
+export type EmotionType = 'happy' | 'angry' | 'sad' | 'thinking' | 'calm' | 'anxious' | 'neutral'
+
+export interface EmotionResult {
+  type: EmotionType
+  color: string
+  label: string
+  emoji: string
+  score: number
 }
 
 export interface DiaryEntry {
@@ -20,74 +23,60 @@ export interface DiaryEntry {
   sealed_until: string | null
   created_at: string
   updated_at: string
-  tags?: string[]
-  memory_connections?: MemoryConnection[]
+  connections?: MemoryConnection[]
 }
 
 export interface MomoSummary {
-  id: string
-  chunk_index: number
-  content_summary: string
+  summary: string
   thinking_style: string
   core_insight: string
-  emotion_color: string
   emotion_emoji: string
-  emotion_label: string
-  created_at: string
+  keywords: string[]
+  emotion: EmotionResult
+  timestamp: string
+  content_length: number
 }
 
 export interface MemoryConnection {
-  id: string
+  id?: string
   diary_id: string
-  connected_diary_id: string
-  connection_type: 'theme' | 'emotion' | 'person' | 'insight'
+  connected_diary_id?: string
+  title?: string | null
+  content_preview?: string
+  created_at: string
+  emotion_label?: string
+  connection_type: string
   strength: number
   description: string
-  created_at: string
-  connected_diary?: DiaryEntry
 }
 
 export interface ChatMessage {
+  id: string
   role: 'user' | 'assistant'
   content: string
+  timestamp: string
 }
 
-export interface SoulCard {
-  core_insight: string
-  hidden_feeling: string
-  question_for_future: string
+export interface NianLunResult {
+  connections: MemoryConnection[]
+  theme_evolution: string
+  insights: string
+}
+
+export interface StarData {
+  id: string
+  x: number
+  y: number
+  size: number
   color: string
-  emoji: string
+  opacity: number
+  diary: DiaryEntry
+  connections: string[]
 }
 
-export type EmotionType = 'happy' | 'angry' | 'sad' | 'thinking' | 'calm' | 'anxious' | 'neutral'
-
-export const EMOTION_COLORS: Record<EmotionType, string> = {
-  happy: '#FFD700',
-  angry: '#FF6B6B',
-  sad: '#6B9FD4',
-  thinking: '#C8A2C8',
-  calm: '#98D8C8',
-  anxious: '#FFA500',
-  neutral: '#A0A0B0',
-}
-
-export const EMOTION_EMOJIS: Record<EmotionType, string> = {
-  happy: '😊',
-  angry: '😤',
-  sad: '😢',
-  thinking: '🤔',
-  calm: '😌',
-  anxious: '😰',
-  neutral: '😐',
-}
-
-export const EMOTION_LABELS: Record<EmotionType, string> = {
-  happy: '开心/兴奋',
-  angry: '愤怒/激动',
-  sad: '低落/忧伤',
-  thinking: '思考/纠结',
-  calm: '平静/满足',
-  anxious: '焦虑/紧张',
-  neutral: '平静',
+export interface UserProfile {
+  id: string
+  username: string | null
+  avatar_url: string | null
+  created_at: string
 }

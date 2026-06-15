@@ -1,30 +1,33 @@
 'use client'
+
 import { motion } from 'framer-motion'
-import { MomoSummary } from '@/types'
+import type { EmotionResult } from '@/types'
 
 interface EmotionBarProps {
-  summaries: MomoSummary[]
-  currentEmotion?: { color: string; label: string }
+  emotion: EmotionResult
 }
 
-export default function EmotionBar({ summaries, currentEmotion }: EmotionBarProps) {
-  const allColors = [
-    ...summaries.map(s => s.emotion_color),
-    ...(currentEmotion ? [currentEmotion.color] : []),
-  ]
-
-  const gradient = allColors.length > 0
-    ? `linear-gradient(90deg, ${allColors.join(', ')})`
-    : 'linear-gradient(90deg, #C8A2C8, #6B9FD4)'
-
+export default function EmotionBar({ emotion }: EmotionBarProps) {
   return (
-    <div className="relative w-full h-1.5 rounded-full overflow-hidden bg-white/5">
+    <div className="relative">
       <motion.div
-        className="absolute inset-0 rounded-full"
-        style={{ background: gradient }}
-        animate={{ opacity: [0.7, 1, 0.7] }}
-        transition={{ duration: 3, repeat: Infinity }}
+        animate={{ backgroundColor: emotion.color }}
+        transition={{ duration: 0.8 }}
+        className="h-1.5 w-full"
+        style={{
+          background: `linear-gradient(90deg, ${emotion.color}cc 0%, ${emotion.color}44 50%, transparent 100%)`,
+        }}
       />
+      <motion.div
+        key={emotion.type}
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        className="absolute top-2 left-4 flex items-center gap-1.5 text-xs"
+        style={{ color: emotion.color }}
+      >
+        <span>{emotion.emoji}</span>
+        <span className="opacity-70">{emotion.label}</span>
+      </motion.div>
     </div>
   )
 }

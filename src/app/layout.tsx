@@ -1,21 +1,24 @@
 import type { Metadata } from 'next'
-import { Geist } from 'next/font/google'
+import { Inter } from 'next/font/google'
 import './globals.css'
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-})
+const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: '脑内小剧场 — AI日记',
-  description: '你的大脑里住着一群小精灵，每次你写日记，它们就忙碌起来。',
+  title: '脑内小剧场 - Brain Theater',
+  description: '你的AI情感日记，探索内心的星海',
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return (
-    <html lang="zh" className={`${geistSans.variable} h-full antialiased`}>
-      <body className="min-h-full bg-[#0a0a1a] text-white">{children}</body>
+    <html lang="zh-CN">
+      <body className={`${inter.className} bg-[#0a0a1a] text-white min-h-screen`}>
+        {children}
+      </body>
     </html>
   )
 }
