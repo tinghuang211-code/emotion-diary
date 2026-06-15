@@ -1,65 +1,180 @@
-import Image from "next/image";
+'use client'
+import { useEffect, useState, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import Link from 'next/link'
+import StarBackground from '@/components/ui/StarBackground'
+import { DiaryEntry } from '@/types'
+import { format } from 'date-fns'
+import { zhCN } from 'date-fns/locale'
+import { PenLine, BookOpen, LogOut } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
 
-export default function Home() {
+interface StarDiary extends DiaryEntry {
+  cx: number
+  cy: number
+}
+
+export default function HomePage() {
+  const [user, setUser] = useState<{ email: string } | null>(null)
+  const [diaries, setDiaries] = useState<StarDiary[]>([])
+  const [hoveredId, setHoveredId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const supabase = createClient()
+  const router = useRouter()
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const init = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { router.push('/auth/login'); return }
+      setUser({ email: user.email || '' })
+
+      const res = await fetch('/api/diaries')
+      if (res.ok) {
+        const data: DiaryEntry[] = await res.json()
+        const w = window.innerWidth
+        const h = window.innerHeight
+        const starred = data.map((d, i) => ({
+          ...d,
+          cx: 100 + (Math.sin(i * 2.1) * 0.4 + 0.5) * (w - 200),
+          cy: 80 + (Math.cos(i * 1.7) * 0.4 + 0.5) * (h - 160),
+        }))
+        setDiaries(starred)
+      }
+      setLoading(false)
+    }
+    init()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push('/auth/login')
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div ref={containerRef} className="relative min-h-screen overflow-hidden">
+      <StarBackground />
+
+      {/* Nav */}
+      <nav className="relative z-10 flex items-center justify-between px-6 py-4">
+        <div className="flex items-center gap-2">
+          <span className="text-2xl">🧠</span>
+          <span className="text-white font-semibold text-sm">脑内小剧场</span>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+        <div className="flex items-center gap-3">
+          {user && <span className="text-white/40 text-xs hidden sm:block">{user.email}</span>}
+          <Link href="/memories">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs text-white/60 hover:text-white border border-white/10 hover:border-white/20 transition-colors"
+            >
+              <BookOpen size={13} /> 记忆地图
+            </motion.button>
+          </Link>
+          <Link href="/diary/new">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.97 }}
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs bg-violet-500 text-white font-medium shadow-lg shadow-violet-500/30"
+            >
+              <PenLine size={13} /> 写日记
+            </motion.button>
+          </Link>
+          <motion.button
+            onClick={handleLogout}
+            whileHover={{ scale: 1.05 }}
+            className="text-white/30 hover:text-white/60 transition-colors"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+            <LogOut size={16} />
+          </motion.button>
+        </div>
+      </nav>
+
+      {/* Stars for diaries */}
+      <div className="absolute inset-0" style={{ zIndex: 5 }}>
+        {diaries.map((diary) => (
+          <motion.div
+            key={diary.id}
+            className="absolute cursor-pointer"
+            style={{ left: diary.cx, top: diary.cy }}
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: Math.random() * 0.5, type: 'spring' }}
+            onHoverStart={() => setHoveredId(diary.id)}
+            onHoverEnd={() => setHoveredId(null)}
+            onClick={() => router.push(`/diary/${diary.id}`)}
+          >
+            <motion.div
+              animate={{ scale: [1, 1.2, 1], opacity: [0.8, 1, 0.8] }}
+              transition={{ duration: 2 + Math.random() * 2, repeat: Infinity }}
+              className="w-3 h-3 rounded-full -translate-x-1/2 -translate-y-1/2"
+              style={{
+                background: diary.emotion_color,
+                boxShadow: `0 0 12px 4px ${diary.emotion_color}60`,
+              }}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+            <AnimatePresence>
+              {hoveredId === diary.id && (
+                <motion.div
+                  initial={{ opacity: 0, y: 5, scale: 0.9 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 5, scale: 0.9 }}
+                  className="absolute z-20 bottom-5 left-1/2 -translate-x-1/2 w-48 rounded-xl bg-[#12122a]/95 border border-white/10 p-3 shadow-xl pointer-events-none"
+                >
+                  <p className="text-white text-xs font-medium line-clamp-2">
+                    {diary.title || diary.content.slice(0, 40) + '...'}
+                  </p>
+                  <p className="text-white/40 text-[10px] mt-1">
+                    {format(new Date(diary.created_at), 'M月d日', { locale: zhCN })}
+                  </p>
+                  <div className="flex items-center gap-1.5 mt-1.5">
+                    <div className="w-2 h-2 rounded-full" style={{ background: diary.emotion_color }} />
+                    <span className="text-[10px] text-white/50">{diary.emotion_label}</span>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Empty state */}
+      {!loading && diaries.length === 0 && (
+        <div className="absolute inset-0 flex items-center justify-center z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center"
           >
-            Documentation
-          </a>
+            <div className="text-6xl mb-4">✨</div>
+            <h1 className="text-2xl font-semibold text-white mb-2">你的星空还是空的</h1>
+            <p className="text-white/50 text-sm mb-6">写下第一篇日记，点亮你的第一颗星</p>
+            <Link href="/diary/new">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.97 }}
+                className="px-6 py-3 rounded-full bg-violet-500 text-white font-medium shadow-lg shadow-violet-500/30"
+              >
+                开始写日记 ✍️
+              </motion.button>
+            </Link>
+          </motion.div>
         </div>
-      </main>
+      )}
+
+      {diaries.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1 }}
+          className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 text-center"
+        >
+          <p className="text-white/30 text-xs">{diaries.length} 颗星星 · 点击查看日记</p>
+        </motion.div>
+      )}
     </div>
-  );
+  )
 }
